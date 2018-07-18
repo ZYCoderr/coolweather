@@ -11,6 +11,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -41,7 +42,7 @@ public class WeatherActivity extends AppCompatActivity {
     public SwipeRefreshLayout swipeRefresh;
     public DrawerLayout drawerLayout;
     private Button navButton;
-    private String weatherId;
+    private String selectedWeatherId;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,21 +68,23 @@ public class WeatherActivity extends AppCompatActivity {
         String weatherString = prefs.getString("weather", null);
 
         if (weatherString != null) {
+            Toast.makeText(WeatherActivity.this, "有缓存值", Toast.LENGTH_SHORT).show();
             // 有缓存值时直接解析天气数据
             Weather weather = Utility.handlerWeatherResponse(weatherString);
-            weatherId = weather.basic.weatherId;
+            selectedWeatherId = weather.basic.weatherId;
             showWeatherInfo(weather);
         } else {
+            Toast.makeText(WeatherActivity.this, "无缓存值", Toast.LENGTH_SHORT).show();
             // 无缓存值时去服务器查询天气
-            weatherId = getIntent().getStringExtra("weather_id");
+            selectedWeatherId = getIntent().getStringExtra("weather_id");
             weatherLayout.setVisibility(View.INVISIBLE); // 先隐藏ScrollView,不然空数据的界面看上去很奇怪
-            requestWeather(weatherId);
+            requestWeather(selectedWeatherId);
         }
 
         swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                requestWeather(weatherId);
+                requestWeather(selectedWeatherId);
             }
         });
 
@@ -125,6 +128,8 @@ public class WeatherActivity extends AppCompatActivity {
                             editor.putString("weather", responseText);
                             editor.apply();
                             showWeatherInfo(weather);
+                            selectedWeatherId = weatherId;
+                            Toast.makeText(WeatherActivity.this, weather.basic.cityName, Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
                         }
@@ -168,9 +173,9 @@ public class WeatherActivity extends AppCompatActivity {
             pm25Text.setText(weather.aqi.city.pm25);
         }
 
-        String comfort = "舒适度" + weather.suggestion.comfort.info;
-        String carWash = "洗车指数" + weather.suggestion.carwash.info;
-        String sport = "运动建议" + weather.suggestion.sport.info;
+        String comfort = "舒适度: " + weather.suggestion.comfort.info;
+        String carWash = "洗车指数: " + weather.suggestion.carwash.info;
+        String sport = "运动建议: " + weather.suggestion.sport.info;
         comfortText.setText(comfort);
         carWashText.setText(carWash);
         sportText.setText(sport);
